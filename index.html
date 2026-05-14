@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOLF LABS | Project Cityscape HW (A1)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ar: {
+                            bg: '#020617',       
+                            panel: 'rgba(15, 23, 42, 0.75)', 
+                            blue: '#3b82f6',     
+                            cyan: '#06b6d4',     
+                            pink: '#ec4899',     
+                            green: '#10b981',    
+                            red: '#ef4444',      
+                            text: '#f8fafc',
+                            muted: '#94a3b8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        heading: ['Rajdhani', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: 'Outfit', sans-serif; overflow: hidden; }
+        #phone-frame { width: 375px; height: 812px; background: var(--tw-colors-ar-bg); border-radius: 40px; border: 12px solid #1a1a1a; overflow: hidden; position: relative; box-shadow: 0 20px 60px rgba(6,182,212,0.15); max-height: 100vh;}
+        .notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 150px; height: 30px; background: #1a1a1a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; z-index: 50; }
+        
+        /* AR BACKGROUNDS INSIDE PHONE */
+        .urban-map-overlay {
+            position: absolute; inset: 0; pointer-events: none; z-index: 1; opacity: 0.12;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/UK_topography_map.jpg/640px-UK_topography_map.jpg');
+            background-size: cover; background-position: center; mix-blend-mode: screen;
+            filter: grayscale(100%) contrast(150%);
+        }
+        
+        .ar-grid {
+            position: absolute; inset: 0; pointer-events: none; z-index: 2; opacity: 0.15;
+            background-image: 
+                linear-gradient(rgba(6, 182, 212, 0.4) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(6, 182, 212, 0.4) 1px, transparent 1px);
+            background-size: 50px 50px;
+            perspective: 1000px;
+            transform-origin: center top;
+            transform: rotateX(60deg) translateY(-100px) scale(2);
+            animation: gridMove 20s linear infinite;
+        }
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 50px; }
+        }
+
+        .ar-glow {
+            position: absolute; inset: 0; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.25) 0%, transparent 60%),
+                        radial-gradient(circle at 50% 100%, rgba(236, 72, 153, 0.15) 0%, transparent 60%);
+        }
+
+        .fade-in { animation: fadeIn 0.3s ease-in forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
+        
+        /* Confetti */
+        .confetti { position: absolute; width: 6px; height: 12px; opacity: 0; z-index: 60; }
+        @keyframes fall { 0% { opacity: 1; transform: translateY(-50px) rotate(0deg); } 100% { opacity: 0; transform: translateY(800px) rotate(720deg); } }
+        
+        .hide-scroll::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="phone-frame">
+        <div class="urban-map-overlay"></div>
+        <div class="ar-glow"></div>
+        <div class="ar-grid"></div>
+        <div class="notch"></div>
+        
+        <!-- UI Header -->
+        <header class="pt-12 pb-4 px-6 bg-slate-900/80 border-b border-ar-cyan/40 flex justify-between items-center z-40 relative backdrop-blur-md shadow-[0_4px_15px_rgba(6,182,212,0.15)]">
+            <div class="font-heading font-bold text-ar-text text-lg tracking-widest uppercase">WOLF<span class="text-ar-cyan">HW</span></div>
+            <div class="text-[10px] font-mono font-bold text-ar-muted bg-slate-800/80 px-2 py-1 rounded border border-slate-600" id="q-counter">Q 01/15</div>
+        </header>
+
+        <!-- Progress Bar -->
+        <div class="h-1 bg-slate-800 w-full relative z-40">
+            <div id="progress-bar" class="h-full bg-ar-cyan transition-all duration-300 shadow-[0_0_10px_#06b6d4]" style="width: 0%"></div>
+        </div>
+
+        <!-- Main Content -->
+        <main id="app-content" class="p-6 h-[calc(100%-100px)] overflow-y-auto relative text-ar-text z-20 hide-scroll flex flex-col">
+            
+            <!-- Start Screen -->
+            <div id="screen-start" class="flex flex-col items-center justify-center flex-grow text-center fade-in">
+                <div class="w-28 h-28 bg-slate-900/60 rounded-full flex items-center justify-center border border-ar-cyan/40 mb-6 shadow-[0_0_30px_rgba(6,182,212,0.2)] relative overflow-hidden backdrop-blur-sm">
+                    <div class="absolute inset-0 rounded-full border-t-2 border-l-2 border-ar-cyan animate-spin" style="animation-duration: 3s;"></div>
+                    <i class="fas fa-satellite-dish text-5xl text-ar-cyan drop-shadow-[0_0_10px_#06b6d4]"></i>
+                </div>
+                <p class="text-[10px] font-bold text-ar-cyan uppercase tracking-[0.3em] font-mono bg-ar-cyan/10 border border-ar-cyan/30 px-3 py-1 rounded mb-4">Route 03 Module</p>
+                <h1 class="font-heading text-4xl font-bold mb-2 uppercase tracking-widest leading-none">Project<br><span class="text-ar-cyan font-light tracking-[0.2em] text-shadow-[0_0_10px_#06b6d4]">Cityscape</span></h1>
+                <p class="text-ar-muted mb-10 text-sm font-sans mt-4">Calibrate your tracker with<br>Prepositions of Place (IN, ON, AT).</p>
+                <button onclick="startQuiz()" class="bg-ar-cyan/10 text-ar-cyan border border-ar-cyan w-full py-4 rounded font-bold font-heading tracking-widest uppercase text-lg shadow-[inset_0_0_15px_rgba(6,182,212,0.2),_0_0_15px_rgba(6,182,212,0.2)] hover:bg-ar-cyan hover:text-[#020617] transition-all">Begin Scan</button>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="screen-quiz" class="hidden flex-col h-full fade-in pt-4">
+                <div class="flex-1 flex flex-col justify-center">
+                    <div class="bg-slate-900/60 border border-ar-cyan/30 p-6 rounded-lg relative mb-8 shadow-[0_0_20px_rgba(6,182,212,0.1)] backdrop-blur-md">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-ar-cyan opacity-30 rounded-t-lg"></div>
+                        <div class="flex justify-between items-center mb-3">
+                            <p class="text-[10px] text-ar-muted font-mono tracking-widest uppercase"><i class="fas fa-crosshairs text-ar-pink mr-1"></i> Data Node</p>
+                            <p class="text-[10px] text-ar-cyan font-mono tracking-widest uppercase animate-pulse">Scanning...</p>
+                        </div>
+                        <p id="question-text" class="font-heading text-2xl font-bold text-center leading-snug uppercase tracking-wide mt-4 mb-2"></p>
+                    </div>
+                    
+                    <div id="options-container" class="flex flex-col gap-3">
+                        <!-- Options injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Screen -->
+            <div id="screen-result" class="hidden flex-col items-center justify-center h-full text-center fade-in z-10 relative">
+                <div class="w-32 h-32 bg-slate-900/80 rounded-full border-2 border-ar-green flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(16,185,129,0.3)] relative mx-auto backdrop-blur-md" id="result-circle">
+                    <div class="absolute inset-2 border border-slate-700 rounded-full"></div>
+                    <span id="final-rank" class="text-6xl font-bold text-ar-text font-heading uppercase tracking-widest">S</span>
+                </div>
+                <h2 class="font-heading text-3xl font-bold mb-2 text-ar-text uppercase tracking-widest" id="final-title">Operator</h2>
+                <p class="text-ar-muted font-mono mb-8 uppercase tracking-widest text-xs">Calibration: <span id="final-score" class="text-ar-cyan font-bold"></span></p>
+                
+                <div class="bg-slate-900/60 p-5 rounded-lg w-full border border-slate-700 mb-8 shadow-inner text-left backdrop-blur-md">
+                    <p class="text-[10px] font-bold text-ar-cyan uppercase tracking-widest mb-3 font-mono border-b border-slate-700 pb-2">System Manual</p>
+                    <p class="text-sm text-ar-text leading-relaxed font-sans">
+                        <span class="text-ar-pink font-bold">IN:</span> 3D spaces / Cities (in the park)<br>
+                        <span class="text-ar-cyan font-bold">ON:</span> Surfaces / Lines (on a bridge)<br>
+                        <span class="text-ar-green font-bold">AT:</span> Specific Points (at the shops)
+                    </p>
+                </div>
+                <button onclick="location.reload()" class="bg-transparent border border-slate-600 text-ar-text w-full py-4 rounded font-bold font-heading tracking-widest uppercase hover:border-ar-cyan hover:text-ar-cyan transition-colors">Reboot Satellite</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const questions = [
+            { q: "Paula is _____ London.", o: ["at", "in", "on"], a: 1 },
+            { q: "I am standing _____ a bridge.", o: ["on", "in", "at"], a: 0 },
+            { q: "We are meeting _____ the shops.", o: ["on", "in", "at"], a: 2 },
+            { q: "The boat is _____ the River Thames.", o: ["on", "at", "in"], a: 0 },
+            { q: "She is relaxing _____ Hyde Park.", o: ["at", "on", "in"], a: 2 },
+            { q: "Let's eat _____ the new restaurant.", o: ["in", "on", "at"], a: 2 },
+            { q: "The bus is driving _____ the street.", o: ["on", "at", "in"], a: 0 },
+            { q: "He is sleeping _____ his hotel room.", o: ["in", "at", "on"], a: 0 },
+            { q: "Look at that plane _____ the sky!", o: ["on", "at", "in"], a: 2 },
+            { q: "They are waiting _____ the bus stop.", o: ["at", "on", "in"], a: 0 },
+            { q: "The museum is _____ the left.", o: ["in", "at", "on"], a: 2 },
+            { q: "We are walking _____ the park.", o: ["in", "at", "on"], a: 0 },
+            { q: "I left my jacket _____ the train.", o: ["at", "in", "on"], a: 2 },
+            { q: "She is working _____ the hospital today.", o: ["in", "at", "on"], a: 1 },
+            { q: "The GPS map is _____ my phone.", o: ["at", "in", "on"], a: 2 }
+        ];
+
+        let currentQ = 0;
+        let score = 0;
+
+        function startQuiz() {
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-quiz').classList.remove('hidden');
+            document.getElementById('screen-quiz').style.display = 'flex';
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQ];
+            document.getElementById('q-counter').innerText = `Q ${String(currentQ + 1).padStart(2, '0')}/${questions.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentQ) / questions.length) * 100}%`;
+            
+            const formattedQ = q.q.replace('_____', '<span class="text-ar-cyan border-b-2 border-dashed border-ar-cyan px-2 mx-1">_____</span>');
+            document.getElementById('question-text').innerHTML = `"${formattedQ}"`;
+            
+            const optsContainer = document.getElementById('options-container');
+            optsContainer.innerHTML = '';
+            
+            q.o.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full bg-slate-900/60 border border-slate-700 text-left p-4 rounded-lg text-lg hover:border-ar-cyan transition-colors flex items-center font-sans group backdrop-blur-sm shadow-sm';
+                btn.innerHTML = `
+                    <div class="w-8 h-8 border border-slate-600 bg-slate-950 flex items-center justify-center text-xs font-bold text-ar-muted mr-4 font-mono group-hover:border-ar-cyan rounded shadow-inner">${String.fromCharCode(65+idx)}</div>
+                    <span class="font-medium text-ar-text uppercase">${opt}</span>
+                `;
+                btn.onclick = () => handleAnswer(idx, q.a, btn, optsContainer);
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selected, correct, btn, container) {
+            const buttons = Array.from(container.children);
+            buttons.forEach(b => b.disabled = true);
+            
+            if (selected === correct) {
+                btn.classList.add('bg-ar-green/20', 'border-ar-green');
+                btn.classList.remove('bg-slate-900/60', 'border-slate-700', 'hover:border-ar-cyan');
+                btn.querySelector('div').style.borderColor = 'var(--tw-colors-ar-green)';
+                btn.querySelector('div').style.color = 'var(--tw-colors-ar-green)';
+                btn.querySelector('span').classList.add('text-ar-green', 'font-bold');
+                score++;
+            } else {
+                btn.classList.add('bg-ar-pink/20', 'border-ar-pink', 'shake');
+                btn.classList.remove('bg-slate-900/60', 'border-slate-700', 'hover:border-ar-cyan');
+                btn.querySelector('div').style.borderColor = 'var(--tw-colors-ar-pink)';
+                btn.querySelector('div').style.color = 'var(--tw-colors-ar-pink)';
+                btn.querySelector('span').classList.add('text-ar-pink');
+                
+                const correctBtn = buttons[correct];
+                correctBtn.classList.add('border-ar-green', 'bg-ar-green/10');
+                correctBtn.querySelector('div').style.borderColor = 'var(--tw-colors-ar-green)';
+                correctBtn.querySelector('div').style.color = 'var(--tw-colors-ar-green)';
+            }
+
+            setTimeout(() => {
+                currentQ++;
+                if (currentQ < questions.length) {
+                    document.getElementById('screen-quiz').classList.remove('fade-in');
+                    void document.getElementById('screen-quiz').offsetWidth; 
+                    document.getElementById('screen-quiz').classList.add('fade-in');
+                    loadQuestion();
+                } else {
+                    showResults();
+                }
+            }, 1400);
+        }
+
+        function showResults() {
+            document.getElementById('screen-quiz').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+            document.getElementById('screen-result').style.display = 'flex';
+            document.getElementById('progress-bar').style.width = '100%';
+            
+            document.getElementById('final-score').innerText = `${String(score).padStart(2,'0')} / ${questions.length}`;
+            
+            let rank, title, color;
+            const percentage = score / questions.length;
+            
+            if (percentage >= 0.9) { 
+                rank = 'S'; 
+                title = 'CHIEF TRACKER'; 
+                color = '#06b6d4'; // ar-cyan
+                spawnConfetti(); 
+            } else if (percentage >= 0.7) { 
+                rank = 'A'; 
+                title = 'FIELD OP'; 
+                color = '#10b981'; // ar-green
+            } else { 
+                rank = 'B'; 
+                title = 'TRAINEE'; 
+                color = '#94a3b8'; // ar-muted
+            }
+            
+            const rankEl = document.getElementById('final-rank');
+            rankEl.innerText = rank;
+            rankEl.style.color = color;
+            
+            const circle = document.getElementById('result-circle');
+            circle.style.borderColor = color;
+            circle.style.boxShadow = `0 0 40px ${color}40`;
+
+            document.getElementById('final-title').innerText = title;
+            document.getElementById('final-title').style.color = color;
+        }
+
+        function spawnConfetti() {
+            const container = document.getElementById('screen-result');
+            const colors = ['#06b6d4', '#ec4899', '#3b82f6'];
+            for(let i=0; i<50; i++) {
+                let conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + '%';
+                conf.style.animation = `fall ${Math.random() * 2 + 2}s linear forwards`;
+                conf.style.animationDelay = Math.random() * 1.5 + 's';
+                conf.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+                container.appendChild(conf);
+            }
+        }
+    </script>
+</body>
+</html>
